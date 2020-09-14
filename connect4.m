@@ -113,8 +113,7 @@ function [] = connect4(scale,figureNumber)
 	function [] = gameSetup(~,~)
 		% Draw board
 		cla
-		yellow = patch([0.5 0.5 7.5 7.5], [0.5 6.5 6.5 0.5],[255 241 66]/255,'LineWidth',0.5*scale/500,'EdgeAlpha',1); % yellow background %255, 241, 66
-% 		yellow.LineWidth
+		yellow = patch([0.5 0.5 7.5 7.5], [0.5 6.5 6.5 0.5],[255 241 66]/255,'LineWidth',0.5*scale/500,'EdgeAlpha',1); % yellow background 
 		hold on
 		[x,y] = meshgrid(1:7,1:6);
 		x = reshape(x,[1,42]);
@@ -225,8 +224,8 @@ function [] = connect4(scale,figureNumber)
 			moves(end+1) = x; %store column
 			grid(y,x) = player; %fill matrix with move
 			plot(x,y,'o','MarkerEdgeColor','none','MarkerSize',40*scale/500','MarkerFaceColor',[1*sign(player+1) 0 0]) % put piece on the board
-
-			win = wincheck(y,x); % check for a win
+			
+			[win, lineCoords] = wincheck(y,x); % check for a win
 			if(~win) % continue game
 				% Change player and turn indicator
 				player = -player;
@@ -234,12 +233,12 @@ function [] = connect4(scale,figureNumber)
 			else
 				% Update Scoreboard
 				if(player==1)
-					score1.String = num2str(1+str2num(score1.String));
+					score1.String = num2str(1+str2double(score1.String));
 				else
-					score_1.String = num2str(1+str2num(score_1.String));
+					score_1.String = num2str(1+str2double(score_1.String));
 				end
 
-				drawlines(y,x);
+				line(lineCoords(1:2),lineCoords(3:4),'LineWidth',7*scale/500, 'Color', [0 0.4470 0.7410]); % draw blue line to mark the win
 			end
 
 		end
@@ -263,7 +262,10 @@ function [] = connect4(scale,figureNumber)
 			for i=1:length(c)
 				if(isa(c(i),'matlab.graphics.chart.primitive.Line') && length(c(i).XData)==1 && c(i).XData==x && c(i).YData==y)
 					delete(c(i));
-					break
+					return
+					% theoretically 'i' should always be 1, but this loop
+					% will find it if something goes wrong or the user adds
+					% their own lines for some reason.
 				end
 			end
 
@@ -271,12 +273,16 @@ function [] = connect4(scale,figureNumber)
 		end
 	end
 
-	function [winner] = wincheck(r,c)
+	function [winner, lineD] = wincheck(r,c)
 		% Checks if the piece in row 'r' and column 'c' is a winning move
+		% and returns the coords required to draw the win line
+		
 		p = grid(r,c); % get who played it
 		winner = true; %assume true. 'return' will end the fcn and report that there is a winner
+		lineD = [c c r r];
 
 		if(r < 4 && sum(grid(r:r+3,c)) == 4*p) %check down
+			lineD(4) = r+3;
 			return
 		end
 		% no need to check upwards, can't happen in connect 4
@@ -286,12 +292,14 @@ function [] = connect4(scale,figureNumber)
 			x=x+1;
 		end
 		x=x-1;
+		lineD(1) = x;
 		count = 0;
 		while( x>0 && grid(r,x)==p) % move to the other end and count
 			x=x-1;
 			count = count+1;
 		end
 		if(count >= 4)
+			lineD(2) = x+1;
 			return
 		end
 
@@ -303,6 +311,7 @@ function [] = connect4(scale,figureNumber)
 		end
 		x=x-1;
 		y=y+1;
+		lineD([1 3]) = [x y];
 		count = 0;
 		while( x>0 && y<7 && grid(y,x)==p)% move to the other end and count
 			x=x-1;
@@ -310,6 +319,7 @@ function [] = connect4(scale,figureNumber)
 			count = count+1;
 		end
 		if(count >= 4)
+			lineD([2 4]) = [x+1 y-1];
 			return
 		end
 
@@ -321,6 +331,7 @@ function [] = connect4(scale,figureNumber)
 		end
 		x=x+1;
 		y=y+1;
+		lineD([1 3]) = [x y];
 		count = 0;
 		while( x<8 && y<7 && grid(y,x)==p)% move to the other end and count
 			x=x+1;
@@ -328,74 +339,11 @@ function [] = connect4(scale,figureNumber)
 			count = count+1;
 		end
 		if(count >= 4)
+			lineD([2 4]) = [x-1 y-1];
 			return
 		end
 
 		winner = false; % only reached if no win. Fcn ends and reports no winner
-	end
-
-	function [] = drawlines(r,c)
-		% Draws the lines to show where someone wins. Code is almost
-		% identical to wincheck(). 
-		p = grid(r,c);
-		if(r < 4 && sum(grid(r:r+3,c)) == 4*p) %check down
-			line([c,c],[r, r+3],'LineWidth',7*scale/500);
-		end
-
-		x = c; %check left-right, 0 degrees
-		while( x<8 && grid(r,x)==p)
-			x=x+1;
-		count = 0;
-		end
-		x=x-1;
-		x2=x;
-		while( x>0 && grid(r,x)==p)
-			x=x-1;
-			count = count+1;
-		end
-		if(count >= 4)
-			line([x2 x+1], [r r],'LineWidth',7*scale/500);
-		end
-
-		x = c; %check up right/ 45 degrees
-		y = r;
-		while( x<8 && y>0 && grid(y,x)==p)
-			x=x+1;
-			y=y-1;
-		end
-		x=x-1;
-		y=y+1;
-		x2=x;
-		y2=y;
-		count = 0;
-		while( x>0 && y<7 && grid(y,x)==p)
-			x=x-1;
-			y=y+1;
-			count = count+1;
-		end
-		if(count >= 4)
-			line([x2 x+1],[y2 y-1],'LineWidth',7*scale/500);
-		end
-	% 	
-		x = c; %check down right/ -45 degrees
-		y = r;
-		while( x>0 && y>0 && grid(y,x)==p)
-			x=x-1;
-			y=y-1;
-		end
-		x=x+1;
-		y=y+1;
-		x2 = x;
-		y2=y;
-		count = 0;
-		while( x<8 && y<7 && grid(y,x)==p)
-			x=x+1;
-			y=y+1;
-			count = count+1;
-		end
-		if(count >= 4)
-			line([x2 x-1],[y2 y-1],'LineWidth',7*scale/500);
-		end
 	end
 
 end
