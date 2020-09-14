@@ -1,11 +1,8 @@
-function [] = connect4(figureNumber)
+function [] = connect4(scale,figureNumber)
 
-	% Miles Miller 2016
+	% Miles Miller - 2020
 	%
-	% Optional input is the figure number
-
-
-	scale = 500; % set initial scale. Used for resizing of the window
+	% Optional inputs are the initial size of the figure and the figure number
 
 	%define shared variables for nested function access
 	% figure vars
@@ -22,12 +19,24 @@ function [] = connect4(figureNumber)
 	turn = [];
 	score1 =[];
 	score_1 = [];
-
-	if(nargin==0) % checks if a figure number was provided
+	
+	% check for input args and if they're acceptable
+	if nargin < 2 || isempty(figureNumber) || (~isnumeric(figureNumber) && ~ishandle(figureNumber))
 		figureNumber = 1;
 	end
+	temp = get(0,'ScreenSize');
+	if nargin<1 || ~isnumeric(scale) || isempty(scale)
+		scale = temp(4)/2; % set initial scale. Used for resizing of the window
+	end
+	if scale < 25
+		scale = 25;
+	elseif scale > temp(4)
+		scale = temp(4);
+	end
+	
+	
 	figureSetup(figureNumber); % setup the window, axes, and buttons
-	gameSetup(); % equivalent to "start a new game"
+	gameSetup(); % start a new game
 
 
 
@@ -37,6 +46,7 @@ function [] = connect4(figureNumber)
 		% figure number used for the game
 
 		s = get(0,'ScreenSize'); % used to center the initial window
+		sg = scale/500; % small gap to create slight offests
 
 		% Create Figure
 		f = figure(fignum);
@@ -45,7 +55,7 @@ function [] = connect4(figureNumber)
 		f.MenuBar = 'none';
 		f.Name = 'Connect Four';
 		f.NumberTitle = 'off';
-		f.Position = [(s(3)-651)/2 (s(4)-500)/2, 651 500];
+		f.Position = [(s(3)-scale*1.3-sg)/2, (s(4)-scale)/2, scale*1.3-sg, scale];
 		f.WindowButtonUpFcn = @mouseClick;
 		f.SizeChangedFcn = @rescale;
 		f.Resize = 'on';
@@ -54,7 +64,7 @@ function [] = connect4(figureNumber)
 		% The axes contains the actual board. It's easiest to "draw" on
 		ax = axes('Parent',f);
 		ax.Units = 'pixels';
-		ax.Position = [1 500/14, 500 500*6/7];
+		ax.Position = [sg, scale/14, scale, scale*6/7];
 		ax.XTick = [];
 		ax.YTick = [];
 		ax.YDir='reverse';
@@ -67,43 +77,44 @@ function [] = connect4(figureNumber)
 		% that the code continues onto the next line. It's just for
 		% formatting
 		uicontrol(f,'Style','pushbutton',... % newgame button
-			'Position',[506 350, 141 50],...
+			'Position',[scale+6*sg, scale*0.7, scale*0.3-9*sg, scale*0.1],...
 			'String','New Game',...
-			'FontSize',14,...
+			'FontSize',14*scale/500,...
 			'Callback',@gameSetup);
 		uicontrol(f,'Style','pushbutton',... % undo button
-			'Position',[506 275, 141 50],...
+			'Position',[scale+6*sg scale*0.55, scale*0.3-9*sg, scale*0.1],...
 			'String','Undo',...
-			'FontSize',14,...
+			'FontSize',14*scale/500,...
 			'Callback',@undoMove);				
-		score1 = uicontrol(f,'Style','text',... % scoreboard red
-			'Position',[526 425, 40, 30],...
+		score1 = uicontrol(f,'Style','text',... % scoreboard red (player == 1)
+			'Position',[scale*1.05+sg, scale*0.85, scale*0.08, scale*0.06],...
 			'String','0',...
-			'FontSize',17,...
+			'FontSize',17*scale/500,...
 			'BackgroundColor',0.85*ones(1,3),...
 			'ForegroundColor',[1 0 0]);
-		score_1 = uicontrol(f,'Style','text',...% scoreboard black
-			'Position',[586 425, 40, 30],...
+		score_1 = uicontrol(f,'Style','text',...% scoreboard black (player == -1)
+			'Position',[scale*1.17+sg, scale*0.85, scale*0.08, scale*0.06],...
 			'String','0',...
-			'FontSize',17,...
+			'FontSize',17*scale/500,...
 			'BackgroundColor',0.85*ones(1,3));
 		uicontrol(f,'Style','text',... % text above starter selection
-			'Position',[511 101, 131 50],...
+			'Position',[scale*1.02+sg, scale*0.2+sg, scale*0.26+sg, scale*0.1],...
 			'String','Who Starts:',...
-			'FontSize',14);
+			'FontSize',14*scale/500);
 		starter = uicontrol(f,'Style','popupmenu',... % starter selection
-			'Position',[526 100, 101, 25],...
+			'Position',[scale*1.05+sg, scale*0.2, scale*0.2+sg, scale*0.05],...
 			'String',{'Alternate','Random','Winner','Loser'},...
-			'FontSize',12);
+			'FontSize',12*scale/500);
 		turn = uicontrol(f,'Style','text',... % turn indicator
-			'Position',[551 200, 50 50],...
+			'Position',[scale*1.1+sg, scale*0.4, scale*0.1, scale*0.1],...
 			'BackgroundColor',[0 0 0]);		
 	end
 
 	function [] = gameSetup(~,~)
 		% Draw board
 		cla
-		patch([0.5 0.5 7.5 7.5], [0.5 6.5 6.5 0.5],[255 241 66]/255); % yellow background %255, 241, 66
+		yellow = patch([0.5 0.5 7.5 7.5], [0.5 6.5 6.5 0.5],[255 241 66]/255,'LineWidth',0.5*scale/500,'EdgeAlpha',1); % yellow background %255, 241, 66
+% 		yellow.LineWidth
 		hold on
 		[x,y] = meshgrid(1:7,1:6);
 		x = reshape(x,[1,42]);
