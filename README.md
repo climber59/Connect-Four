@@ -5,4 +5,4 @@ Click anywhere in the column you want to place your piece. Features a scoreboard
 
 The function has two optional input arguments. The first 'scale' is the height of the initial window, in pixels, though you can drag to resize the window at any time. The second is the figure number the game will use if you want to specify for some reason.
 
-![screenshot](https://imgur.com/a/0JQmxWy)
+![](https://i.imgur.com/4ZgoVJz.png)
